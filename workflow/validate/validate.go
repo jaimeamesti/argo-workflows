@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/intstr"
 	"github.com/argoproj/argo-workflows/v3/util/sorting"
 	"github.com/argoproj/argo-workflows/v3/util/template"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azureblob"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
@@ -546,6 +547,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	}
 	if art.HDFS != nil {
 		err := hdfs.ValidateArtifact(fmt.Sprintf("%s.hdfs", errPrefix), art.HDFS)
+		if err != nil {
+			return err
+		}
+	}
+	if art.AzureBlob != nil {
+		err := azureblob.ValidateArtifact(fmt.Sprintf("%s.azureBlob", errPrefix), art.AzureBlob)
 		if err != nil {
 			return err
 		}

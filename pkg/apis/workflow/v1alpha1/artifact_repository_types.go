@@ -24,6 +24,8 @@ type ArtifactRepository struct {
 	OSS *OSSArtifactRepository `json:"oss,omitempty" protobuf:"bytes,5,opt,name=oss"`
 	// GCS stores artifact in a GCS object store
 	GCS *GCSArtifactRepository `json:"gcs,omitempty" protobuf:"bytes,6,opt,name=gcs"`
+	// Azure blob stores artifact in Azure Blob Storage object store
+	AzureBlob *AzureBlobArtifactRepository `json:"azureBlob,omitempty" protobuf:"bytes,7,opt,name=azureBlob"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -47,7 +49,10 @@ func (a *ArtifactRepository) Get() ArtifactRepositoryType {
 		return a.OSS
 	} else if a.S3 != nil {
 		return a.S3
+	} else if a.AzureBlob != nil {
+		return a.AzureBlob
 	}
+
 	return nil
 }
 
@@ -115,6 +120,22 @@ func (r *GCSArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 		k = DefaultArchivePattern
 	}
 	l.GCS = &GCSArtifact{GCSBucket: r.GCSBucket, Key: k}
+}
+
+// AzureBlobArtifactRepository defines the controller configuration for a Azure Blob artifact repository
+type AzureBlobArtifactRepository struct {
+	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=container"`
+
+	// Name defines the format of how to store keys. Can reference workflow variables.
+	PathFormat string `json:"name,omitempty" protobuf:"bytes,2,opt,name=name"`
+}
+
+func (r *AzureBlobArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
+	k := r.PathFormat
+	if k == "" {
+		k = DefaultArchivePattern
+	}
+	l.AzureBlob = &AzureBlobArtifact{AzureBlobContainer: r.AzureBlobContainer, Name: k}
 }
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository

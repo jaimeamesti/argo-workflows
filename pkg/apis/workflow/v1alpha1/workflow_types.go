@@ -1089,6 +1089,9 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+
+	// AzureBlob contains Azure Blob artifact location details
+	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty" protobuf:"bytes,9,opt,name=azureBlob"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1110,6 +1113,8 @@ func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
 		return a.Raw, nil
 	} else if a.S3 != nil {
 		return a.S3, nil
+	} else if a.AzureBlob != nil {
+		return a.AzureBlob, nil
 	}
 	return nil, fmt.Errorf("You need to configure artifact storage. More information on how to do this can be found in the docs: https://argoproj.github.io/argo-workflows/configure-artifact-repository/")
 }
@@ -2214,6 +2219,45 @@ func (s *S3Artifact) SetKey(key string) error {
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
+}
+
+// AzureBlobContainer contains the access information required for interfacing with an Azure Blob Container
+type AzureBlobContainer struct {
+	// Container is the name of the container
+	Container string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
+
+	// Insecure will connect to the service with TLS
+	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,2,opt,name=insecure"`
+
+	// AccountNameSecret is the Azure blob storage account name where is the container
+	AccountNameSecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
+
+	// SecretKeySecret is the secrete key to access to Azure storage account
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the Azure blob storage container for output artifacts, if it doesn't exist.
+	CreateContainerIfNotPresent *bool `json:"createContainerIfNotPresent,omitempty" protobuf:"varint,5,opt,name=createContainerIfNotPresent"`
+}
+
+// AzureBlobArtifact is the location of an Azure blob artifact
+type AzureBlobArtifact struct {
+	AzureBlobContainer `json:"azureBlobContainer,inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
+
+	// Name is the name in the container where the artifact resides
+	Name string `json:"name,omitempty" protobuf:"bytes,2,opt,name=name"`
+}
+
+func (s *AzureBlobArtifact) GetKey() (string, error) {
+	return s.Name, nil
+}
+
+func (s *AzureBlobArtifact) SetKey(name string) error {
+	s.Name = name
+	return nil
+}
+
+func (s *AzureBlobArtifact) HasLocation() bool {
+	return s != nil && s.Container != "" && s.Name != ""
 }
 
 // GitArtifact is the location of an git artifact

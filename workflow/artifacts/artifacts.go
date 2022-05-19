@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azureblob"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
 	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
@@ -193,6 +194,30 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
+	}
+
+	if art.AzureBlob != nil {
+		driver := azureblob.ArtifactDriver{}
+
+		if art.AzureBlob.AccountNameSecret != nil && art.AzureBlob.AccountNameSecret.Name != "" {
+			serviceAccountNameBytes, err := ri.GetSecret(ctx, art.AzureBlob.AccountNameSecret.Name, art.AzureBlob.AccountNameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			serviceAccountName := string(serviceAccountNameBytes)
+			driver.AccountName = serviceAccountName
+		}
+
+		if art.AzureBlob.SecretKeySecret != nil && art.AzureBlob.SecretKeySecret.Name != "" {
+			serviceKeyBytes, err := ri.GetSecret(ctx, art.AzureBlob.SecretKeySecret.Name, art.AzureBlob.SecretKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			serviceSharedKey := string(serviceKeyBytes)
+			driver.SharedKey = serviceSharedKey
+		}
+
 		return &driver, nil
 	}
 
